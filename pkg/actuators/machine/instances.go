@@ -297,10 +297,6 @@ func launchInstance(machine *machinev1beta1.Machine, machineProviderConfig *mach
 	if err != nil {
 		return nil, mapierrors.InvalidMachineConfiguration("error getting subnet IDs: %v", err)
 	}
-	if len(subnetIDs) > 1 {
-		klog.Warningf("More than one subnet id returned, only first one will be used")
-	}
-
 	// build list of networkInterfaces (just 1 for now)
 	var networkInterfaces = []*ec2.InstanceNetworkInterfaceSpecification{
 		{
@@ -309,6 +305,25 @@ func launchInstance(machine *machinev1beta1.Machine, machineProviderConfig *mach
 			SubnetId:                 subnetIDs[0],
 			Groups:                   securityGroupsIDs,
 		},
+	}
+
+	if len(subnetIDs) > 1 {
+		klog.Warningf("More than one subnet id returned, only first one will be used")
+	}
+	for index, secondarySubnet := range machineProviderConfig.SecondarySubnets {
+		subnetIDs, err := getSubnetIDs(machineKey, secondarySubnet, machineProviderConfig.Placement.AvailabilityZone, awsClient)
+		if err != nil {
+			return nil, mapierrors.InvalidMachineConfiguration("error getting subnet IDs: %v", err)
+		}
+		if len(subnetIDs) > 1 {
+			klog.Warningf("More than one subnet id returned, only first one will be used")
+		}
+		secondaryInterface := &ec2.InstanceNetworkInterfaceSpecification{
+			DeviceIndex: aws.Int64(machineProviderConfig.DeviceIndex + int64(index) + 1),
+			SubnetId:    subnetIDs[0],
+			Groups:      securityGroupsIDs,
+		}
+		networkInterfaces = append(networkInterfaces, secondaryInterface)
 	}
 
 	switch machineProviderConfig.NetworkInterfaceType {

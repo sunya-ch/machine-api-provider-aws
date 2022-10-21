@@ -60,6 +60,8 @@ type AWSMachineProviderConfig struct {
 	SecurityGroups []AWSResourceReference `json:"securityGroups,omitempty"`
 	// Subnet is a reference to the subnet to use for this instance
 	Subnet AWSResourceReference `json:"subnet"`
+	// SecondarySubnet
+	SecondarySubnets []AWSResourceReference `json:"secondarySubnets,omitempty"`
 	// Placement specifies where to create the instance in AWS
 	Placement Placement `json:"placement"`
 	// LoadBalancers is the set of load balancers to which the new instance
